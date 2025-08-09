@@ -102,7 +102,7 @@ class NewJobFragment : Fragment() {
                 )
                 findNavController().navigateUp()
 
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Toast.makeText(
                     requireContext(),
                     getString(R.string.invalid_date_format),

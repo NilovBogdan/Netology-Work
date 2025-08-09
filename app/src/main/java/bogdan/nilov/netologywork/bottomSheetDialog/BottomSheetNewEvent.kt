@@ -76,7 +76,7 @@ class BottomSheetNewEvent : BottomSheetDialogFragment() {
                 val odt = LocalDateTime.parse(date, formatter).atZone(ZoneId.systemDefault())
                     .toOffsetDateTime()
                 eventViewModel.setDateTime(odt)
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 Toast.makeText(
                     requireContext(),
                     getString(R.string.invalid_date_format),

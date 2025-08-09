@@ -159,7 +159,7 @@ class EventViewModel @Inject constructor(
         _editedEvent.value = _editedEvent.value?.copy(
             datetime = date
         )
-        println(_editedEvent.value)
+
     }
 
     fun setEventType(eventType: EventType) {
