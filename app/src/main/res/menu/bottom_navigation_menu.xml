@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/postFeedFragment"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_feed_24"
+        android:title="@string/title_posts" />
+
+    <item
+        android:id="@+id/eventFeedFragment"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_event_24"
+        android:title="@string/title_events" />
+
+    <item
+        android:id="@+id/userFeedFragment"
+        android:enabled="true"
+        android:icon="@drawable/ic_baseline_people_outline_24"
+        android:title="@string/title_users" />
+
+</menu>
