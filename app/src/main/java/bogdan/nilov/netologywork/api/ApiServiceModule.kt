@@ -1,5 +1,6 @@
 package bogdan.nilov.netologywork.api
 
+import bogdan.nilov.netologywork.BuildConfig
 import bogdan.nilov.netologywork.BuildConfig.API_KEY
 import bogdan.nilov.netologywork.auth.AppAuth
 import com.google.gson.GsonBuilder
@@ -11,6 +12,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.create
@@ -26,11 +28,21 @@ class ApiServiceModule {
         private const val BASE_URL = "http://94.228.125.136:8080/"
     }
 
+    @Provides
+    @Singleton
+    fun provideLogging(): HttpLoggingInterceptor = HttpLoggingInterceptor().apply {
+        if (BuildConfig.DEBUG) {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+    }
+
     @Singleton
     @Provides
     fun provideOkHttp(
+        provideLogging: HttpLoggingInterceptor,
         appAuth: AppAuth
     ): OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(provideLogging)
         .addInterceptor { chain ->
             appAuth.authState.value.token?.let { token->
                 val request = chain.request().newBuilder()

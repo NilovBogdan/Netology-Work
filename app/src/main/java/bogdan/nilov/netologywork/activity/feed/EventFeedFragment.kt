@@ -22,6 +22,7 @@ import bogdan.nilov.netologywork.dto.Event
 import bogdan.nilov.netologywork.dto.FeedItem
 import bogdan.nilov.netologywork.dto.UserResponse
 import bogdan.nilov.netologywork.model.AuthModel
+import bogdan.nilov.netologywork.model.InvolvedItemType
 import bogdan.nilov.netologywork.util.AppConst
 import bogdan.nilov.netologywork.viewModel.AuthViewModel
 import bogdan.nilov.netologywork.viewModel.EventViewModel
@@ -86,6 +87,20 @@ class EventFeedFragment : Fragment() {
 
             override fun openCard(feedItem: FeedItem) {
                 eventViewModel.openEvent(feedItem as Event)
+                lifecycleScope.launch {
+                    eventViewModel.getInvolved(
+                        feedItem.speakerIds,
+                        InvolvedItemType.SPEAKERS
+                    )
+                    eventViewModel.getInvolved(
+                        feedItem.likeOwnerIds,
+                        InvolvedItemType.LIKERS
+                    )
+                    eventViewModel.getInvolved(
+                        feedItem.participantsIds,
+                        InvolvedItemType.PARTICIPANT
+                    )
+                }
                 parentNavController?.navigate(R.id.action_mainFragment_to_detailEventFragment)
             }
         })

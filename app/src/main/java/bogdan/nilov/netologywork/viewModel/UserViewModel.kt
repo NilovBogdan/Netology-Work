@@ -8,6 +8,8 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import bogdan.nilov.netologywork.dto.FeedItem
 import bogdan.nilov.netologywork.dto.UserResponse
+import bogdan.nilov.netologywork.error.NetworkError
+import bogdan.nilov.netologywork.error.UnknownError
 import bogdan.nilov.netologywork.repository.Repository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +17,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import okio.IOException
 import javax.inject.Inject
 
 @HiltViewModel
@@ -32,7 +35,13 @@ class UserViewModel @Inject constructor(
     val dataUser: LiveData<UserResponse> = _dataUser
 
     fun getUser(userId: Long) = viewModelScope.launch {
-        _dataUser.value = repository.getUser(userId)
+        try {
+            _dataUser.value = repository.getUser(userId)
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
+        }
     }
 
 }

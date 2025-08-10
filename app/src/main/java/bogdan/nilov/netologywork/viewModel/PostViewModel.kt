@@ -12,6 +12,7 @@ import bogdan.nilov.netologywork.dto.AttachmentType
 import bogdan.nilov.netologywork.dto.Coordinates
 import bogdan.nilov.netologywork.dto.FeedItem
 import bogdan.nilov.netologywork.dto.Post
+import bogdan.nilov.netologywork.error.NetworkError
 import bogdan.nilov.netologywork.error.UnknownError
 import bogdan.nilov.netologywork.model.AttachmentModel
 import bogdan.nilov.netologywork.model.InvolvedItemModel
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import okio.IOException
 import java.io.File
 import java.time.OffsetDateTime
 import javax.inject.Inject
@@ -90,39 +92,53 @@ class PostViewModel @Inject constructor(
 
 
     fun savePost(content: String) {
-        val text = content.trim()
-        if (_editedPost.value?.content == text) {
-            _editedPost.value = emptyPost
-            return
-        }
-        _editedPost.value = _editedPost.value?.copy(content = text)
-        _editedPost.value?.let {
-            viewModelScope.launch {
-                val attachment = _attachmentData.value
-                if (attachment == null) {
-                    repository.savePost(
-                        it
-                    )
-                } else {
-                    repository.savePostWithAttachment(
-                        it, attachment
-                    )
+        try {
+            val text = content.trim()
+            if (_editedPost.value?.content == text) {
+                _editedPost.value = emptyPost
+                return
+            }
+            _editedPost.value = _editedPost.value?.copy(content = text)
+            _editedPost.value?.let {
+                viewModelScope.launch {
+                    val attachment = _attachmentData.value
+                    if (attachment == null) {
+                        repository.savePost(
+                            it
+                        )
+                    } else {
+                        repository.savePostWithAttachment(
+                            it, attachment
+                        )
+                    }
                 }
             }
+            _editedPost.value = emptyPost
+            _attachmentData.value = null
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
         }
-        _editedPost.value = emptyPost
-        _attachmentData.value = null
     }
 
     fun deletePost(post: Post) = viewModelScope.launch {
-        repository.deletePost(post.id)
+        try {
+            repository.deletePost(post.id)
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
+        }
     }
 
     fun like(post: Post) = viewModelScope.launch {
         try {
             repository.like(post)
-        } catch (_: Exception) {
-            UnknownError
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
         }
     }
 
@@ -164,17 +180,16 @@ class PostViewModel @Inject constructor(
 
 
     suspend fun getInvolved(involved: List<Long>, involvedItemType: InvolvedItemType) {
-        val list = involved
-            .let {
-                if (it.size > 4) it.take(5) else it
-            }
-            .map {
-                viewModelScope.async { repository.getUser(it) }
-            }.awaitAll()
+        try {
+            val list = involved
+                .let {
+                    if (it.size > 4) it.take(5) else it
+                }
+                .map {
+                    viewModelScope.async { repository.getUser(it) }
+                }.awaitAll()
 
-        synchronized(involvedData) {
             when (involvedItemType) {
-
                 InvolvedItemType.LIKERS -> {
                     involvedData.value = involvedData.value?.copy(
                         likers = list
@@ -189,7 +204,12 @@ class PostViewModel @Inject constructor(
 
                 else -> return
             }
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
         }
+
 
     }
 

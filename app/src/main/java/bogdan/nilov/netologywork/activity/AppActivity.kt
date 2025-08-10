@@ -1,6 +1,5 @@
 package bogdan.nilov.netologywork.activity
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -17,7 +16,7 @@ class AppActivity : AppCompatActivity() {
 
         checkPermissionLocation()
     }
-    @SuppressLint("MemberExtensionConflict")
+
     private fun checkPermissionLocation() {
         registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions()

@@ -8,7 +8,9 @@ import android.view.ViewGroup
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -42,7 +44,7 @@ class DetailEventFragment : Fragment() {
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         val binding = FragmentDetailEventBinding.inflate(inflater, container, false)
 
@@ -90,124 +92,118 @@ class DetailEventFragment : Fragment() {
         val imageProvider =
             ImageProvider.fromResource(requireContext(), R.drawable.pin)
 
-        eventViewModel.eventData.observe(viewLifecycleOwner) { eventItem ->
-            event = eventItem
-            with(binding) {
-                avatar.loadAvatar(eventItem.authorAvatar)
-                authorName.text = eventItem.author
-                lastWork.text = eventItem.authorJob ?: getString(R.string.in_search_work)
 
-                when (eventItem.attachment?.type) {
-                    AttachmentType.IMAGE -> {
-                        imageContent.loadAttachment(eventItem.attachment.url)
-                        imageContent.isVisible = true
-                    }
 
-                    AttachmentType.VIDEO -> {
-                        player = ExoPlayer.Builder(requireContext()).build().apply {
-                            setMediaItem(MediaItem.fromUri(eventItem.attachment.url))
+                eventViewModel.eventData.observe(viewLifecycleOwner) { eventItem ->
+                    event = eventItem
+                    with(binding) {
+                        avatar.loadAvatar(eventItem.authorAvatar)
+                        authorName.text = eventItem.author
+                        lastWork.text = eventItem.authorJob ?: getString(R.string.in_search_work)
+
+                        when (eventItem.attachment?.type) {
+                            AttachmentType.IMAGE -> {
+                                imageContent.loadAttachment(eventItem.attachment.url)
+                                imageContent.isVisible = true
+                            }
+
+                            AttachmentType.VIDEO -> {
+                                player = ExoPlayer.Builder(requireContext()).build().apply {
+                                    setMediaItem(MediaItem.fromUri(eventItem.attachment.url))
+                                }
+                                videoContent.player = player
+                                videoContent.isVisible = true
+                            }
+
+                            AttachmentType.AUDIO -> {
+                                player = ExoPlayer.Builder(requireContext()).build().apply {
+                                    setMediaItem(MediaItem.fromUri(eventItem.attachment.url))
+                                }
+                                videoContent.player = player
+                                audioContent.isVisible = true
+                            }
+
+                            null -> {
+                                imageContent.isVisible = false
+                                videoContent.isVisible = false
+                                audioContent.isVisible = false
+                                player?.release()
+                            }
                         }
-                        videoContent.player = player
-                        videoContent.isVisible = true
-                    }
 
-                    AttachmentType.AUDIO -> {
-                        player = ExoPlayer.Builder(requireContext()).build().apply {
-                            setMediaItem(MediaItem.fromUri(eventItem.attachment.url))
+
+                        typeEvent.text = eventItem.type.toString()
+                        dateEvent.text =
+                            eventItem.datetime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
+                                .toString()
+                        content.text = eventItem.content
+
+
+
+                        buttonLike.isChecked = eventItem.likedByMe
+                        buttonLike.text = eventItem.likeOwnerIds.size.toString()
+
+                        participantsButton.text = eventItem.participantsIds.size.toString()
+
+                        val point =
+                            if (eventItem.coords != null) Point(
+                                eventItem.coords.lat,
+                                eventItem.coords.long
+                            ) else null
+                        if (point != null) {
+                            if (placeMark == null) {
+                                placeMark = binding.map.mapWindow.map.mapObjects.addPlacemark()
+                            }
+                            placeMark?.apply {
+                                geometry = point
+                                setIcon(imageProvider)
+                                isVisible = true
+                            }
+                            binding.map.mapWindow.map.move(
+                                CameraPosition(
+                                    point,
+                                    13.0f,
+                                    0f,
+                                    0f
+                                )
+                            )
+                        } else {
+                            placeMark = null
                         }
-                        videoContent.player = player
-                        audioContent.isVisible = true
-                    }
+                        binding.map.isVisible = placeMark != null && point != null
 
-                    null -> {
-                        imageContent.isVisible = false
-                        videoContent.isVisible = false
-                        audioContent.isVisible = false
-                        player?.release()
-                    }
-                }
-
-
-                typeEvent.text = eventItem.type.toString()
-                dateEvent.text =
-                    eventItem.datetime.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
-                        .toString()
-                content.text = eventItem.content
-
-                lifecycleScope.launch {
-                    eventViewModel.getInvolved(eventItem.speakerIds, InvolvedItemType.SPEAKERS)
-                }
-
-                lifecycleScope.launch {
-                    eventViewModel.getInvolved(eventItem.likeOwnerIds, InvolvedItemType.LIKERS)
-                }
-
-                lifecycleScope.launch {
-                    eventViewModel.getInvolved(
-                        eventItem.participantsIds,
-                        InvolvedItemType.PARTICIPANT
-                    )
-                }
-
-                buttonLike.isChecked = eventItem.likedByMe
-                buttonLike.text = eventItem.likeOwnerIds.size.toString()
-
-                participantsButton.text = eventItem.participantsIds.size.toString()
-
-                val point =
-                    if (eventItem.coords != null) Point(
-                        eventItem.coords.lat,
-                        eventItem.coords.long
-                    ) else null
-                if (point != null) {
-                    if (placeMark == null) {
-                        placeMark = binding.map.mapWindow.map.mapObjects.addPlacemark()
-                    }
-                    placeMark?.apply {
-                        geometry = point
-                        setIcon(imageProvider)
-                        isVisible = true
-                    }
-                    binding.map.mapWindow.map.move(
-                        CameraPosition(
-                            point,
-                            13.0f,
-                            0f,
-                            0f
-                        )
-                    )
-                } else {
-                    placeMark = null
-                }
-                binding.map.isVisible = placeMark != null && point != null
-
-                playPauseAudio.setOnClickListener {
-                    if (player?.isPlaying == true) {
-                        player!!.playWhenReady = !player!!.playWhenReady
-                    } else {
-                        player?.apply {
-                            prepare()
-                            play()
+                        playPauseAudio.setOnClickListener {
+                            if (player?.isPlaying == true) {
+                                player!!.playWhenReady = !player!!.playWhenReady
+                            } else {
+                                player?.apply {
+                                    prepare()
+                                    play()
+                                }
+                            }
                         }
+
+                        player?.addListener(object : Player.Listener {
+                            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                                binding.playPauseAudio.setIconResource(
+                                    if (isPlaying) R.drawable.ic_pause_circle_24 else R.drawable.ic_play_circle_24
+                                )
+                            }
+                        })
+
                     }
                 }
 
-                player?.addListener(object : Player.Listener {
-                    override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        binding.playPauseAudio.setIconResource(
-                            if (isPlaying) R.drawable.ic_pause_circle_24 else R.drawable.ic_play_circle_24
-                        )
-                    }
-                })
 
-            }
-        }
+
 
         eventViewModel.involvedData.observe(viewLifecycleOwner) { involved ->
             speakersAdapter.submitList(involved.speakers)
             likersAdapter.submitList(involved.likers)
             participantAdapter.submitList(involved.participants)
         }
+
+
 
         binding.topAppBar.setNavigationOnClickListener {
             findNavController().navigateUp()
@@ -221,7 +217,7 @@ class DetailEventFragment : Fragment() {
         player?.apply {
             stop()
         }
-        eventViewModel.resetInvolved()
+
     }
 
 }

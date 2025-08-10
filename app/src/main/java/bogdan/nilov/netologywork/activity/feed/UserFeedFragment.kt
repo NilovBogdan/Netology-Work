@@ -82,7 +82,7 @@ class UserFeedFragment : Fragment() {
             override fun edit(feedItem: FeedItem) {}
             override fun share(content: String) {}
 
-            @SuppressLint("MemberExtensionConflict")
+
             override fun selectUser(userResponse: UserResponse) {
                 if (selectedUsers.contains(userResponse.id)) {
                     selectedUsers.remove(userResponse.id)

@@ -13,6 +13,8 @@ import bogdan.nilov.netologywork.dto.Coordinates
 import bogdan.nilov.netologywork.dto.Event
 import bogdan.nilov.netologywork.dto.EventType
 import bogdan.nilov.netologywork.dto.FeedItem
+import bogdan.nilov.netologywork.error.NetworkError
+import bogdan.nilov.netologywork.error.UnknownError
 import bogdan.nilov.netologywork.model.AttachmentModel
 import bogdan.nilov.netologywork.model.InvolvedItemModel
 import bogdan.nilov.netologywork.model.InvolvedItemType
@@ -28,6 +30,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import okio.IOException
 import java.io.File
 import java.time.OffsetDateTime
 import javax.inject.Inject
@@ -89,26 +92,32 @@ class EventViewModel @Inject constructor(
     private val _attachmentData: MutableLiveData<AttachmentModel?> = MutableLiveData(null)
 
     fun saveEvent(content: String) {
-        val text = content.trim()
-        if (_editedEvent.value?.content == text) {
-            _editedEvent.value = emptyEvent
-            return
-        }
-        _editedEvent.value = _editedEvent.value?.copy(content = text)
-        _editedEvent.value?.let {
-            viewModelScope.launch {
-                val attachment = _attachmentData.value
-                if (attachment == null) {
-                    repository.saveEvent(it)
-                } else {
-                    repository.saveEventWithAttachment(
-                        it, attachment
-                    )
+        try {
+            val text = content.trim()
+            if (_editedEvent.value?.content == text) {
+                _editedEvent.value = emptyEvent
+                return
+            }
+            _editedEvent.value = _editedEvent.value?.copy(content = text)
+            _editedEvent.value?.let {
+                viewModelScope.launch {
+                    val attachment = _attachmentData.value
+                    if (attachment == null) {
+                        repository.saveEvent(it)
+                    } else {
+                        repository.saveEventWithAttachment(
+                            it, attachment
+                        )
+                    }
                 }
             }
+            _editedEvent.value = emptyEvent
+            _attachmentData.value = null
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
         }
-        _editedEvent.value = emptyEvent
-        _attachmentData.value = null
     }
 
 
@@ -124,7 +133,13 @@ class EventViewModel @Inject constructor(
     }
 
     fun deleteEvent(event: Event) = viewModelScope.launch {
-        repository.deleteEvent(event.id)
+        try {
+            repository.deleteEvent(event.id)
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
+        }
     }
 
     fun setCoord(point: Point?) {
@@ -148,7 +163,13 @@ class EventViewModel @Inject constructor(
     }
 
     fun like(event: Event) = viewModelScope.launch {
-        repository.likeEvent(event)
+        try {
+            repository.likeEvent(event)
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
+        }
     }
 
     fun edit(event: Event) {
@@ -173,15 +194,15 @@ class EventViewModel @Inject constructor(
     }
 
     suspend fun getInvolved(involved: List<Long>, involvedItemType: InvolvedItemType) {
-        val list = involved
-            .let {
-                if (it.size > 4) it.take(5) else it
-            }
-            .map {
-                viewModelScope.async { repository.getUser(it) }
-            }.awaitAll()
+        try {
+            val list = involved
+                .let {
+                    if (it.size > 4) it.take(5) else it
+                }
+                .map {
+                    viewModelScope.async { repository.getUser(it) }
+                }.awaitAll()
 
-        synchronized(involvedData) {
             when (involvedItemType) {
                 InvolvedItemType.SPEAKERS -> {
                     involvedData.value = involvedData.value?.copy(
@@ -203,8 +224,11 @@ class EventViewModel @Inject constructor(
 
                 else -> return
             }
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
         }
-
     }
 
     fun resetInvolved() {

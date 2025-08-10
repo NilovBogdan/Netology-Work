@@ -4,9 +4,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bogdan.nilov.netologywork.dto.Job
+import bogdan.nilov.netologywork.error.NetworkError
+import bogdan.nilov.netologywork.error.UnknownError
 import bogdan.nilov.netologywork.repository.Repository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import okio.IOException
 import java.time.OffsetDateTime
 import javax.inject.Inject
 
@@ -18,10 +21,16 @@ class JobViewModel @Inject constructor(
 
 
     fun getJobs(userId: Long?) = viewModelScope.launch {
-        if (userId == null) {
-            repository.getMyJobs()
-        } else {
-            repository.getJobs(userId)
+        try {
+            if (userId == null) {
+                repository.getMyJobs()
+            } else {
+                repository.getJobs(userId)
+            }
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
         }
     }
 
@@ -32,20 +41,32 @@ class JobViewModel @Inject constructor(
         startWork: OffsetDateTime,
         finishWork: OffsetDateTime
     ) = viewModelScope.launch {
-        repository.saveJob(
-            Job(
-                id = 0,
-                name = name,
-                position = position,
-                link = link,
-                start = startWork,
-                finish = finishWork,
+        try {
+            repository.saveJob(
+                Job(
+                    id = 0,
+                    name = name,
+                    position = position,
+                    link = link,
+                    start = startWork,
+                    finish = finishWork,
+                )
             )
-        )
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
+        }
     }
 
     fun deleteJob(id: Long) = viewModelScope.launch {
-        repository.deleteJob(id)
+        try {
+            repository.deleteJob(id)
+        } catch (_: IOException) {
+            throw NetworkError
+        }catch(_: Exception) {
+            throw UnknownError
+        }
     }
 
 

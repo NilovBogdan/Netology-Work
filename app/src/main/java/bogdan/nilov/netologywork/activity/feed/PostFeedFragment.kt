@@ -23,6 +23,7 @@ import bogdan.nilov.netologywork.dto.FeedItem
 import bogdan.nilov.netologywork.dto.Post
 import bogdan.nilov.netologywork.dto.UserResponse
 import bogdan.nilov.netologywork.model.AuthModel
+import bogdan.nilov.netologywork.model.InvolvedItemType
 import bogdan.nilov.netologywork.util.AppConst
 import bogdan.nilov.netologywork.viewModel.AuthViewModel
 import bogdan.nilov.netologywork.viewModel.PostViewModel
@@ -90,6 +91,10 @@ class PostFeedFragment : Fragment() {
 
             override fun openCard(feedItem: FeedItem) {
                 postViewModel.openPost(feedItem as Post)
+                lifecycleScope.launch {
+                    postViewModel.getInvolved(feedItem.likeOwnerIds, InvolvedItemType.LIKERS)
+                    postViewModel.getInvolved(feedItem.mentionIds, InvolvedItemType.MENTIONED)
+                }
                 parentNavController?.navigate(R.id.action_mainFragment_to_detailPostFragment)
             }
         })

@@ -123,15 +123,6 @@ class DetailPostFragment : Fragment() {
                     postItem.published.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))
                 content.text = postItem.content
 
-                lifecycleScope.launch {
-                    postViewModel.getInvolved(postItem.likeOwnerIds, InvolvedItemType.LIKERS)
-                }
-
-                lifecycleScope.launch {
-                    postViewModel.getInvolved(postItem.mentionIds, InvolvedItemType.MENTIONED)
-                }
-
-
                 buttonLike.text = postItem.likeOwnerIds.size.toString()
                 buttonLike.isChecked = postItem.likedByMe
                 buttonMentioned.text = postItem.mentionIds.size.toString()
@@ -191,6 +182,7 @@ class DetailPostFragment : Fragment() {
         }
 
         binding.topAppBar.setNavigationOnClickListener {
+            postViewModel.resetInvolved()
             findNavController().navigateUp()
         }
 
@@ -202,7 +194,7 @@ class DetailPostFragment : Fragment() {
         player?.apply {
             stop()
         }
-        postViewModel.resetInvolved()
+
     }
 
 }
