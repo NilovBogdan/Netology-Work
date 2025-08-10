@@ -8,29 +8,27 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Set up JDK 17-${{ matrix.runs-on }}
+      - name: Set up JDK 17
         uses: actions/setup-java@v1
         with:
           java-version: 17
-
-      - name: Decode maps.properties
-        env:
-          MAPS_API_KEY: ${{ secrets.MAPS_API_KEY }}
-        run: echo $MAPS_API_KEY > .maps.properties
   
       - name: Decode api.properties
         env:
-          API_KEY: ${{ secrets.API_KEY }}
+          API_KEY: ${{ secrets.API_KEI }}
         run: echo $API_KEY > .api.properties
 
+      - name: Decode maps.properties
+        env:
+          MAPS_API_KEY: ${{ secrets.MAPS_API_KEI }}
+        run: echo $MAPS_API_KEY > .maps.properties
         
-
       - name: Build
         run: |
           chmod +x ./gradlew
@@ -38,7 +36,5 @@ jobs:
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
+          name: app-debug.apk
           path: app/build/outputs/apk/debug/app-debug.apk
-          pattern: Set up JDK 17-*
-          merge-multiple: true
-          overwrite: true
